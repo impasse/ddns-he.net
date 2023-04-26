@@ -9,21 +9,10 @@ import (
 	"time"
 )
 
-func ddns() {
-	domain := os.Getenv("DOMAIN")
-	password := os.Getenv("KEY")
-
-	if domain == "" {
-		log.Fatalln("DOMAIN not set")
-	}
-
-	if password == "" {
-		log.Fatalln("KEY not set")
-	}
-
+func ddns(client *http.Client, domain string, password string) {
+	log.Println("Start ddns")
 	updateURL := fmt.Sprintf("https://dyn.dns.he.net/nic/update?hostname=%s", domain)
 
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", updateURL, nil)
 	if err != nil {
 		log.Println(err)
@@ -50,18 +39,31 @@ func ddns() {
 }
 
 func main() {
+	domain := os.Getenv("DOMAIN")
+	password := os.Getenv("KEY")
+
+	if domain == "" {
+		log.Fatalln("DOMAIN not set")
+	}
+
+	if password == "" {
+		log.Fatalln("KEY not set")
+	}
+
 	interval, err := time.ParseDuration(os.Getenv("INTERVAL"))
 
 	if err != nil {
 		interval = 5 * time.Minute
 	}
 
+	client := &http.Client{}
+
 	tick := time.NewTicker(interval)
 
 	for {
 		select {
 		case <-tick.C:
-			go ddns()
+			go ddns(client, domain, password)
 		}
 	}
 }
